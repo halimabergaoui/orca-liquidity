@@ -10,11 +10,11 @@ import Decimal from "decimal.js";
 process.env.ANCHOR_PROVIDER_URL = "https://api.mainnet-beta.solana.com";
 process.env.ANCHOR_WALLET = "./wallet.json";
 
-async function getDistribution(ctx,poolData,pool) {
+export async function getDistribution(ctx,poolData,pool) {
   
 
-  const TICKARRAY_LOWER_OFFSET = -10;
-  const TICKARRAY_UPPER_OFFSET = +10;
+  const TICKARRAY_LOWER_OFFSET = -50;
+  const TICKARRAY_UPPER_OFFSET = +50;
   const tickarray_start_indexes: number[] = [];
   const tickarray_pubkeys: PublicKey[] = [];
   const liquidity_distribution = [];
@@ -48,29 +48,45 @@ async function getDistribution(ctx,poolData,pool) {
   
   for (let i = 0; i < liquidity_distribution.length; i++) {
     liquidity_distribution[i].liquidity = liquidity_distribution[i].liquidity.add(liquidity_difference);
+    const price = PriceMath.sqrtPriceX64ToPrice(poolData.getData().sqrtPrice, 9, 6);
+
+    const amounts = PoolUtil.getTokenAmountsFromLiquidity(
+      liquidity_distribution[i].liquidity,
+      poolData.getData().sqrtPrice,
+      PriceMath.tickIndexToSqrtPriceX64(liquidity_distribution[i].tick_index),
+      PriceMath.tickIndexToSqrtPriceX64(liquidity_distribution[i].tick_index+poolData.getData().tickSpacing),
+      true
+    );
+    
+  let amount1= DecimalUtil.fromU64(amounts.tokenA, 9).toNumber()
+  let amount2= DecimalUtil.fromU64(amounts.tokenB, 6).toNumber()
+  //console.log({amount1,amount2,price:price.toNumber()})
+  liquidity_distribution[i].amounts = amount1*price.toNumber()+amount2;
+
   }
   
   return liquidity_distribution;
 }
 
-async function getBoundsLiquidity(minPrice, maxPrice,liquidityDistribution) {
+export async function getBoundsLiquidity(minPrice, maxPrice,liquidityDistribution) {
   const boundsLiquidity = liquidityDistribution
     .filter((data) => {
       const price = PriceMath.tickIndexToPrice(data.tick_index, 9, 6).toFixed(6).toString().padStart(11, " ")
-      console.log(
+       console.log(
         "tick_index:", data.tick_index.toString().padStart(6, " "),
         "/ price:", price,
         "/ liquidity:", data.liquidity.toString().padStart(20, " "),
+        "/ amounts:", data.amounts.toString()
        // L.tick_index === current_initializable_tick_index ? " <== CURRENT" : ""
       );
       return price >= minPrice && price <= maxPrice;
     })
-    .reduce((sum, data) => sum.add(data.liquidity), new BN(0));
+    .reduce((sum, data) => sum+(data.amounts), 0);
    // .reduce((sum, data) => sum.add(data.liquidity), new BN(0));
   return boundsLiquidity;
 }
 
-async function main() {
+/* async function main() {
   let pool = new PublicKey("7qbRF6YsyGuLUVs6Y1q64bdVrfe4ZcUUz1JRdoVNUJnm");
 
   const provider = AnchorProvider.env();
@@ -78,6 +94,7 @@ async function main() {
   const client = buildWhirlpoolClient(ctx);
   const poolData = await client.getPool(pool);
   await poolData.refreshData();
+  
 
   const liquidityDistribution = await getDistribution(ctx,poolData,pool);
 
@@ -86,21 +103,11 @@ async function main() {
     const L = liquidityDistribution[i];
   }
 
-  const minPrice = 15; // Replace with your minimum price
-  const maxPrice = 38; // Replace with your maximum price
+  const minPrice = 0; // Replace with your minimum price
+  const maxPrice = 1000; // Replace with your maximum price
   const boundsLiquidity = await getBoundsLiquidity(minPrice, maxPrice, liquidityDistribution);
   console.log(`Liquidity between ${minPrice} and ${maxPrice}: ${boundsLiquidity}`);
-  const amounts = PoolUtil.getTokenAmountsFromLiquidity(
-    boundsLiquidity,
-    poolData.getData().sqrtPrice,
-    PriceMath.priceToSqrtPriceX64(DecimalUtil.fromNumber(minPrice),9, 6),
-    PriceMath.priceToSqrtPriceX64(DecimalUtil.fromNumber(maxPrice),9, 6),
-    true
-  );
   
-let amount1= DecimalUtil.fromU64(amounts.tokenA, 9).toNumber()
-let amount2= DecimalUtil.fromU64(amounts.tokenB, 6).toNumber()
-console.log({amount1,amount2})
 }
 
-main();
+main(); */

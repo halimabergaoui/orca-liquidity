@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Finance</title>
+   <!-- Add the link to your CSS stylesheet here -->
+   <link rel="stylesheet" type="text/css" href="calculateLiquidity.css">
+   <!-- Add a reference to the Fetch API -->
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Liquidity Calculator</h1>
+        <form id="myForm" action="#" method="post">
+            <div class="form-group">
+                <label for="platform">Platform:</label>
+                <select id="platform" name="platform">
+                    <option value="orca">Orca</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="poolAddress">Pool Address :</label>
+                <input type="text" id="poolAddress" name="poolAddress" required>
+            </div>
+
+            <div class="form-group">
+                <label for="lowerBound">Lower Bound :</label>
+                <input type="number" step="0.01" id="lowerBound" name="lowerBound" required>
+            </div>
+
+            <div class="form-group">
+                <label for="upperBound">Upper Bound :</label>
+                <input type="number" step="0.01" id="upperBound" name="upperBound" required>
+            </div>
+
+            <div class="form-group">
+                <label for="feeRate">Fee Rate :</label>
+                <input type="number" step="0.01" id="feeRate" name="feeRate" required>
+            </div>
+            <div class="form-group">
+                <label for="capitalDeposited">Capital Deposited :</label>
+                <input type="number" step="0.01" id="capitalDeposited" name="capitalDeposited" required>
+            </div>
+            <div class="form-group">
+                <label for="shortPosition">Short Position :</label>
+                <input type="number" step="0.01" id="shortPosition" name="shortPosition" required>
+            </div>
+            <div class="form-group">
+                <label for="shortFee">Short Fee :</label>
+                <input type="number" step="0.01" id="shortFee" name="shortFee" required>
+            </div>
+            <div class="form-group">
+                <label >Liquidity:<h3 id="liquidity"></h3></label>
+            </div>
+            <div class="form-group">
+                <label >yield:<h3 id="yield"></h3></label>
+            </div>
+            <div class="form-group">
+                <button type="submit" id="submitButton">Submit</button>
+            </div>
+        </form>
+    </div>
+
+
+
+    <script>
+        // Capture the form submission event
+        document.getElementById("myForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent the default form submission behavior
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $("#submitButton").on("click", function () {
+                const formData = new FormData($("#myForm")[0]);
+                submitForm()
+            });
+        });
+    </script>
+
+    <script>
+        function submitForm() {
+            // Get values from the form
+            const lowerBound = parseFloat(document.getElementById("lowerBound").value);
+            const upperBound = parseFloat(document.getElementById("upperBound").value);
+            const poolAddress = document.getElementById("poolAddress").value;
+            const platform = document.getElementById("platform").value;
+            const feeRate = document.getElementById("feeRate").value;
+            const capitalDeposited = document.getElementById("capitalDeposited").value;
+            const shortPosition = document.getElementById("shortPosition").value;
+            const shortFee = document.getElementById("shortFee").value;
+            makeRequest(platform,poolAddress,lowerBound,upperBound,feeRate,capitalDeposited,shortPosition,shortFee)
+        }
+    </script>
+    <script>
+        function makeRequest(platform, poolAddress, lowerBound, upperBound, feeRate, capitalDeposited, shortPosition, shortFee) {
+            var url = "http://localhost:3000/calculate-yield";
+        
+            // Create a data object with the form values
+            var data = {
+                poolStr: poolAddress,
+                minPrice: lowerBound,
+                maxPrice: upperBound,
+                FeeRate: feeRate,
+                capitalDeposited: capitalDeposited,
+                shortPosition: shortPosition,
+                shortFee: shortFee
+            };
+        
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: JSON.stringify(data), // Send the data as JSON
+                contentType: "application/json", // Set the content type to JSON
+                success: function (response) {
+                    // Handle the server response here
+                    console.log("Server response:", response);
+                    document.getElementById("liquidity").innerHTML = response.liquidity;
+                    document.getElementById("yield").innerHTML = response.yield;
+                },
+                error: function (error) {
+                    // Handle errors here
+                    console.error("Error:", error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
